@@ -8,12 +8,12 @@ def test_discover(comm):
     print("=" * 65)
     data = comm.discover()
     if data:
-        print("[CELULAR] Dispositivo encontrado:")
+        print("Dispositivo encontrado:")
         print(f"          - ID: {data.get('device_id')}")
         print(f"          - Clave pública (Y): {data.get('public_key')[:24]}...")
         print(f"          - Estado: {data.get('status')}")
     else:
-        print(f"[CELULAR] No se pudo conectar a {comm.device_url}.")
+        print(f"No se pudo conectar a {comm.device_url}.")
         print("          Asegúrese de ejecutar 'device_server.py' en la otra terminal.")
 
 
@@ -22,16 +22,16 @@ def test_case_1_happy_path(comm):
     print("  [DEMO] CASO 1: COMISIONAMIENTO EXITOSO (RFC 8235 - AUTENTICACIÓN MUTUA)")
     print("=" * 65)
 
-    print(f"[CELULAR] 1. Generando prueba ZKP RFC 8235 para '{comm.session.user_id}'...")
+    print(f"1. Generando prueba ZKP RFC 8235 para '{comm.session.user_id}'...")
     status, data = comm.commission()
 
-    print(f"[CELULAR] 2. Respuesta del dispositivo: HTTP {status}")
+    print(f"2. Respuesta del dispositivo: HTTP {status}")
     if status == 200:
-        print(f"[CELULAR] ✓ El dispositivo aceptó la prueba del celular.")
-        print(f"[CELULAR] Mensaje: {data.get('message')}")
+        print(f"El dispositivo aceptó la prueba del celular.")
+        print(f"Mensaje: {data.get('message')}")
 
         # Autenticación mutua: celular verifica la prueba devuelta por el dispositivo
-        print(f"\n[CELULAR] 3. Verificando prueba devuelta por '{data.get('device_id')}'...")
+        print(f"\n3. Verificando prueba devuelta por '{data.get('device_id')}'...")
         is_device_valid = comm.session.verify_proof(
             other_user_id=data.get("device_id"),
             other_public_key_hex=data.get("device_public_key"),
@@ -39,12 +39,12 @@ def test_case_1_happy_path(comm):
         )
 
         if is_device_valid:
-            print("[CELULAR] ✓ ¡AUTENTICACIÓN MUTUA COMPLETADA EXITOSAMENTE!")
-            print("          Ambas partes demostraron conocer sus secretos sin revelarlos.")
+            print("Autenticación mutua completada exitosamente.")
+            print("Ambas partes demostraron conocer sus secretos sin revelarlos.")
         else:
-            print("[CELULAR] ✗ Fallo: La prueba devuelta por el dispositivo es inválida.")
+            print("Fallo: La prueba devuelta por el dispositivo es inválida.")
     else:
-        print(f"[CELULAR] ✗ Error: {data.get('error')}")
+        print(f"Error: {data.get('error')}")
 
 
 def test_case_2_tampered_proof(comm):
@@ -52,7 +52,7 @@ def test_case_2_tampered_proof(comm):
     print("  [DEMO] CASO 2: RECHAZO POR PRUEBA ALTERADA (TAMPERED PROOF)")
     print("=" * 65)
 
-    print("[CELULAR] 1. Generando prueba legítima y alterando 1 bit de la respuesta 'r'...")
+    print("1. Generando prueba legítima y alterando 1 bit de la respuesta 'r'...")
     legit_proof = comm.session.create_proof()
 
     # Modificar un bit en la respuesta escalar r (XOR con 0x01)
@@ -62,16 +62,16 @@ def test_case_2_tampered_proof(comm):
         "response": tampered_r,
     }
 
-    print("[CELULAR] 2. Enviando prueba corrupta al dispositivo...")
+    print("2. Enviando prueba corrupta al dispositivo...")
     status, data = comm.commission(proof=corrupt_proof)
 
-    print(f"[CELULAR] 3. Código HTTP recibido: {status}")
-    print(f"[CELULAR] Mensaje del servidor: {data}")
+    print(f"3. Código HTTP recibido: {status}")
+    print(f"Mensaje del servidor: {data}")
 
     if status == 401:
-        print("[CELULAR] ✓ RECHAZO CONFIRMADO: La API detectó la corrupción matemática de la prueba.")
+        print("Rechazo por parte del servidor: La API detectó la corrupción matemática de la prueba.")
     else:
-        print("[CELULAR] ✗ ERROR INESPERADO: El servidor aceptó la prueba corrupta.")
+        print("Error: El servidor aceptó la prueba corrupta.")
 
 
 def test_case_3_impersonation_rfc8235(comm):
@@ -79,21 +79,19 @@ def test_case_3_impersonation_rfc8235(comm):
     print("  [DEMO] CASO 3: RECHAZO POR SUPLANTACIÓN DE IDENTIDAD (RFC 8235)")
     print("=" * 65)
 
-    print(f"[CELULAR] 1. '{comm.session.user_id}' genera una prueba legítima...")
+    print(f"1. '{comm.session.user_id}' genera una prueba legítima...")
     legit_proof = comm.session.create_proof()
 
-    print("[CELULAR] 2. Un atacante intercepta la prueba y la envía como 'Atacante_Mallory'...")
+    print("2. Un atacante intercepta la prueba y la envía como 'Atacante_Mallory'...")
     status, data = comm.commission(proof=legit_proof, user_id="Atacante_Mallory")
 
-    print(f"[CELULAR] 3. Código HTTP recibido: {status}")
-    print(f"[CELULAR] Mensaje del servidor: {data}")
+    print(f"3. Código HTTP recibido: {status}")
+    print(f"Mensaje del servidor: {data}")
 
     if status == 401:
-        print("[CELULAR] ✓ RECHAZO CONFIRMADO: RFC 8235 es inmune a la suplantación.")
-        print("          Al recalcular c = H(G || Y || A || 'Atacante_Mallory'), el hash difiere")
-        print("          y la ecuación r*G + c*Y != A no se cumple.")
+        print("Rechazo por parte del servidor: RFC 8235 es inmune a la suplantación.")
     else:
-        print("[CELULAR] ✗ ERROR: El servidor aceptó la suplantación.")
+        print("Error: El servidor aceptó la suplantación.")
 
 
 def test_case_4_vulnerability_basic(comm):
@@ -101,22 +99,19 @@ def test_case_4_vulnerability_basic(comm):
     print("  [DEMO] CASO 4: DEMOSTRACIÓN DE VULNERABILIDAD EN VERSIÓN BÁSICA (c = H(A))")
     print("=" * 65)
 
-    print("[CELULAR] 1. Generando prueba con la versión básica (c = H(A))...")
+    print("1. Generando prueba con la versión básica (c = H(A))...")
     basic_proof = comm.session.create_proof_basic()
 
-    print("[CELULAR] 2. El atacante presenta la prueba bajo el nombre 'Atacante_Mallory'...")
+    print("2. El atacante presenta la prueba bajo el nombre 'Atacante_Mallory'...")
     status, data = comm.commission(proof=basic_proof, user_id="Atacante_Mallory", basic_mode=True)
 
-    print(f"[CELULAR] 3. Código HTTP recibido: {status}")
-    print(f"[CELULAR] Mensaje del servidor: {data}")
+    print(f"3. Código HTTP recibido: {status}")
+    print(f"Mensaje del servidor: {data}")
 
     if status == 200:
-        print("\n[CELULAR] VULNERABILIDAD EXPLOTADA EXITOSAMENTE:")
-        print("          La versión básica aceptó al atacante porque el hash c = H(A)")
-        print("          no vincula qué usuario emitió la prueba.")
-        print("          ¡Esto demuestra empíricamente por qué la industria requiere el RFC 8235!")
+        print("\nVULNERABILIDAD EXPLOTADA:")
     else:
-        print("[CELULAR] ✗ La prueba básica no fue aceptada.")
+        print("La prueba básica no fue aceptada.")
 
 
 def main():
@@ -125,7 +120,6 @@ def main():
     while True:
         print("\n" + "=" * 65)
         print("  DEMO EN VIVO: COMISIONAMIENTO THREAD CON ZERO-KNOWLEDGE PROOFS")
-        print("  Asignatura: TEL252 - Criptografía y Seguridad en la Información")
         print("=" * 65)
         print(f"  Actor: {comm.session.user_id} | Servidor: {comm.device_url}")
         print("  " + "-" * 61)
@@ -135,10 +129,9 @@ def main():
         print("  [4] Caso 3: Rechazo por suplantación de UserID (RFC 8235)")
         print("  [5] Caso 4: Demostración de vulnerabilidad básica (Weak Fiat-Shamir)")
         print("  [6] Ejecutar todos los casos en secuencia")
-        print("  [0] Salir")
         print("=" * 65)
 
-        choice = input("Seleccione una opción [0-6]: ").strip()
+        choice = input("Seleccione una opción [1-6]: ").strip()
 
         if choice == "1":
             test_discover(comm)
@@ -161,9 +154,6 @@ def main():
             test_case_3_impersonation_rfc8235(comm)
             time.sleep(1)
             test_case_4_vulnerability_basic(comm)
-        elif choice == "0":
-            print("\nSaliendo de la demo.")
-            break
         else:
             print("Opción inválida. Ingrese un número entre 0 y 6.")
 

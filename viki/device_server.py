@@ -25,7 +25,7 @@ def create_app():
     @app.route("/commission", methods=["POST"])
     def commission():
         
-        #Endpoint estándar (RFC 8235)
+        # Endpoint estándar (RFC 8235)
         # Se recibe la prueba ZKP del celular.
         # Se verifica que el celular conozca su secreto Y que la prueba pertenezca a su UserID.
         # Si es válida, responde con la prueba ZKP del propio dispositivo (Autenticación Mutua).
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     #Genera la sesión al entrar al servidor.
     session = Session(user_id=DEVICE_ID)
 
-    print(f"DISPOSITIVO THREAD INICIADO: {session.user_id}")
+    print(f"Dispositivo Thread iniciado: {session.user_id}")
     print(f"Servidor escuchando en: http://127.0.0.1:{PORT}")
 
     app = create_app()

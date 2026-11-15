@@ -1,8 +1,5 @@
-"""
-zkp.py - Módulo Criptográfico para Zero-Knowledge Proofs
-Curva: NIST256p (P-256)
-Estándar: RFC 8235 (Schnorr Non-interactive Zero-Knowledge Proof)
-"""
+#Estándar: Protocolo no interactivo de Schnorr (RFC8235)
+#Curva: NIST256p (P-256)
 
 from ecdsa import SigningKey, VerifyingKey, NIST256p
 from secrets import randbelow
@@ -127,42 +124,3 @@ class Session:
         c = int.from_bytes(hashlib.sha256(vk_A.to_string()).digest(), "big") % self.n
         reconstructed_A = r * self.G + c * point_Y
         return reconstructed_A == point_A
-
-
-if __name__ == "__main__":
-    print("=== PRUEBAS UNITARIAS DE ZKP (zkp.py - Estilo Session) ===")
-
-    # Instanciamos dos sesiones como en los laboratorios anteriores
-    celular = Session(user_id="Celular_Admin")
-    dispositivo = Session(user_id="Foco_Thread_01")
-
-    # 1. Verificación legítima RFC 8235
-    proof_celular = celular.create_proof()
-    es_valido = dispositivo.verify_proof(
-        other_user_id=celular.user_id,
-        other_public_key_hex=celular.get_public_key_hex(),
-        proof=proof_celular,
-    )
-    assert es_valido, "Error: La prueba legítima RFC 8235 debería ser aceptada."
-    print("✓ [RFC 8235] Verificación legítima celular -> dispositivo: ACEPTADA")
-
-    # 2. Prueba con respuesta alterada (Tampered Proof)
-    proof_alterada = {
-        "commitment": proof_celular["commitment"],
-        "response": hex(int(proof_celular["response"], 16) ^ 0x01),
-    }
-    assert not dispositivo.verify_proof(celular.user_id, celular.get_public_key_hex(), proof_alterada)
-    print("✓ [RFC 8235] Rechazo de prueba matemáticamente alterada: CORRECTO")
-
-    # 3. Ataque de suplantación (Wrong UserID / Credential Forwarding)
-    # Un atacante intenta presentar la prueba del celular diciendo que su UserID es 'Atacante'
-    assert not dispositivo.verify_proof("Atacante_Mallory", celular.get_public_key_hex(), proof_celular)
-    print("✓ [RFC 8235] Rechazo de prueba con UserID cambiado: CORRECTO (Inmune a suplantación)")
-
-    # 4. Vulnerabilidad de la versión básica
-    proof_basica = celular.create_proof_basic()
-    # En la versión básica, la verificación funciona sin importar el UserID
-    assert dispositivo.verify_proof_basic(celular.get_public_key_hex(), proof_basica)
-    print("✓ [Versión Básica] Vulnerable: La prueba básica es aceptada sin vincular identidades.")
-
-    print("=== TODAS LAS PRUEBAS PASARON EXITOSAMENTE ===")
